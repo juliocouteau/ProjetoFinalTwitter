@@ -1,0 +1,112 @@
+{% extends 'twitter/base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-white dark:bg-gray-900">
+    <!-- Cabeçalho Superior Fixo -->
+    <div class="flex items-center space-x-4 p-3 sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-10 border-b dark:border-gray-800">
+        <a href="{% url 'home' %}" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition text-black dark:text-white">
+            ⬅️
+        </a>
+        <div>
+            <h2 class="text-xl font-bold text-black dark:text-white">{{ view_user.username }}</h2>
+            <span class="text-gray-500 text-sm">{{ posts.count }} Posts</span>
+        </div>
+    </div>
+
+    <!-- Banner / Imagem de Capa -->
+    <div class="h-48 bg-gray-200 dark:bg-gray-800 w-full relative overflow-hidden">
+        {% if view_user.cover_image %}
+            <img src="{{ view_user.cover_image.url }}" class="w-full h-full object-cover">
+        {% else %}
+            <!-- Cor padrão caso não tenha capa -->
+            <div class="w-full h-full bg-blue-400 opacity-20"></div>
+        {% endif %}
+    </div>
+
+    <!-- Informações do Perfil -->
+    <div class="px-4 pb-4">
+        <div class="relative flex justify-between items-end -mt-16 mb-4">
+            <!-- Foto de Perfil com borda dinâmica para dark mode -->
+            <div class="relative">
+                <img src="{{ view_user.profile_pic.url }}" 
+                     class="h-32 w-32 rounded-full border-4 border-white dark:border-gray-900 object-cover bg-gray-300 shadow-sm">
+            </div>
+            
+            <!-- Botão Editar ou Seguir -->
+            <div class="mb-2">
+                {% if user == view_user %}
+                    <a href="{% url 'edit_profile' %}" 
+                       class="border border-gray-300 dark:border-gray-700 px-4 py-2 rounded-full font-bold text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                        Editar Perfil
+                    </a>
+                {% else %}
+                    <a href="{% url 'follow_unfollow' view_user.username %}" 
+                       class="{% if view_user in user.following.all %}bg-transparent border border-gray-300 text-black dark:text-white dark:border-gray-700{% else %}bg-black dark:bg-white text-white dark:text-black{% endif %} px-5 py-2 rounded-full font-bold transition">
+                        {% if view_user in user.following.all %}Seguindo{% else %}Seguir{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Nome e @ -->
+        <div>
+            <h2 class="text-2xl font-black text-black dark:text-white">{{ view_user.username }}</h2>
+            <span class="text-gray-500 text-md">@{{ view_user.username }}</span>
+        </div>
+
+        <!-- Biografia -->
+        <div class="mt-3 text-gray-800 dark:text-gray-200 leading-relaxed">
+            {{ view_user.bio|default:"Sem biografia ainda." }}
+        </div>
+
+        <!-- Estatísticas: Seguidores / Seguindo -->
+        <div class="flex space-x-4 mt-4 text-sm">
+            <a href="{% url 'following_list' view_user.username %}" class="hover:underline text-black dark:text-white">
+                <span class="font-bold">{{ view_user.following.count }}</span> <span class="text-gray-500">Seguindo</span>
+            </a>
+            <a href="{% url 'followers_list' view_user.username %}" class="hover:underline text-black dark:text-white">
+                <span class="font-bold">{{ view_user.followers.count }}</span> <span class="text-gray-500">Seguidores</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Abas de Navegação (Apenas Visual) -->
+    <div class="flex border-b dark:border-gray-800 font-bold text-gray-500">
+        <div class="flex-1 text-center py-4 border-b-4 border-blue-500 text-black dark:text-white cursor-pointer">
+            Posts
+        </div>
+        <div class="flex-1 text-center py-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition">
+            Respostas
+        </div>
+        <div class="flex-1 text-center py-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition">
+            Curtidas
+        </div>
+    </div>
+
+    <!-- Lista de Posts do Usuário -->
+    <div class="divide-y dark:divide-gray-800">
+        {% for post in posts %}
+        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition flex space-x-3">
+            <img src="{{ post.author.profile_pic.url }}" class="h-12 w-12 rounded-full object-cover">
+            <div class="flex-1">
+                <div class="flex items-center space-x-1">
+                    <span class="font-bold text-black dark:text-white">{{ post.author.username }}</span>
+                    <span class="text-gray-500 text-sm">@{{ post.author.username }} · {{ post.created_at|timesince }}</span>
+                </div>
+                <p class="mt-1 text-gray-800 dark:text-gray-200">{{ post.content }}</p>
+                
+                <!-- Ícones de Ação (Apenas Visual no Perfil para manter limpo) -->
+                <div class="flex mt-3 space-x-12 text-gray-500 text-sm">
+                    <span>❤️ {{ post.likes.count }}</span>
+                    <span>💬 {{ post.comments.count }}</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-10 text-center">
+            <p class="text-gray-500 dark:text-gray-400 italic text-lg">Nenhum post feito por este usuário ainda.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

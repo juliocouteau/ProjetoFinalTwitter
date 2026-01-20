@@ -1,0 +1,14 @@
+{% extends 'twitter/base.html' %}
+{% block content %}
+<div class="p-4 border-b font-bold text-xl">Editar Perfil</div>
+<form method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+    {% csrf_token %}
+    <div class="flex items-center space-x-4">
+        <img src="{{ user.profile_pic.url }}" class="h-20 w-20 rounded-full object-cover border">
+        <div>{{ form.profile_pic }}</div>
+    </div>
+    <div>{{ form.username.label }}: {{ form.username }}</div>
+    <div>{{ form.bio.label }}: {{ form.bio }}</div>
+    <button type="submit" class="w-full bg-blue-500 text-white font-bold py-3 rounded-full hover:bg-blue-600">Salvar Alterações</button>
+</form>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'twitter/base.html' %}
+{% block content %}
+<div class="p-4 border-b">
+    <form action="{% url 'search_users' %}" method="GET" class="relative">
+        <input type="text" name="q" placeholder="Buscar usuários..." 
+               class="w-full bg-gray-100 rounded-full py-2 px-4 outline-none focus:ring-2 focus:ring-blue-400">
+    </form>
+</div>
+
+<div class="p-4">
+    <h2 class="font-bold text-xl mb-4">Resultados para "{{ query }}"</h2>
+    {% for user_found in results %}
+        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+                <img src="{{ user_found.profile_pic.url }}" class="h-10 w-10 rounded-full">
+                <a href="{% url 'profile' user_found.username %}" class="font-bold hover:underline">{{ user_found.username }}</a>
+            </div>
+            <a href="{% url 'profile' user_found.username %}" class="bg-black text-white px-4 py-1 rounded-full text-sm">Ver Perfil</a>
+        </div>
+    {% empty %}
+        <p class="text-gray-500">Nenhum usuário encontrado.</p>
+    {% endfor %}
+</div>
+{% endblock %}

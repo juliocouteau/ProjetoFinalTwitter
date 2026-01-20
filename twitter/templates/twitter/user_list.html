@@ -1,0 +1,20 @@
+{% extends 'twitter/base.html' %}
+{% block content %}
+<div class="p-4 border-b flex items-center space-x-4">
+    <a href="javascript:history.back()" class="text-xl">⬅️</a>
+    <h2 class="text-xl font-bold">{{ title }}</h2>
+</div>
+<div class="divide-y">
+    {% for u in users %}
+    <div class="p-4 flex items-center space-x-3">
+        <img src="{{ u.profile_pic.url }}" class="h-12 w-12 rounded-full">
+        <div>
+            <a href="{% url 'profile' u.username %}" class="font-bold hover:underline block">{{ u.username }}</a>
+            <span class="text-gray-500 text-sm">@{{ u.username }}</span>
+        </div>
+    </div>
+    {% empty %}
+    <p class="p-4 text-gray-500">Ninguém por aqui ainda.</p>
+    {% endfor %}
+</div>
+{% endblock %}

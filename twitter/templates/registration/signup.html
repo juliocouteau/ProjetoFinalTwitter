@@ -1,0 +1,42 @@
+{% extends 'twitter/base.html' %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center mt-10">
+    <div class="w-full max-w-md bg-white p-8 border rounded-lg shadow-sm">
+        <h2 class="text-2xl font-bold mb-6 text-center">Criar sua conta no Twitter</h2>
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="flex flex-col">
+                    <label class="font-semibold text-gray-700">{{ field.label }}</label>
+                    <div class="border rounded p-2 focus-within:ring-2 focus-within:ring-blue-400">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        <p class="text-red-500 text-xs">{{ field.errors }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-full transition">
+                Cadastrar
+            </button>
+        </form>
+
+        <p class="mt-4 text-center text-gray-600">
+            Já tem uma conta? <a href="{% url 'login' %}" class="text-blue-500 hover:underline">Entrar</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    /* Isso deixa os campos do formulário bonitos */
+    input {
+        width: 100%;
+        outline: none;
+        border: none;
+    }
+</style>
+{% endblock %}
