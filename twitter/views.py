@@ -1,19 +1,22 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q
 from .models import Post, User, Comment, Notification
 from .forms import CustomUserCreationForm, UserUpdateForm, PostForm
-from django.db.models import Q
 
 @login_required
 def home(request):
-    # Otimização: traz autor, likes, comentários e os posts originais (em caso de retweet)
+    # Otimização: traz o autor, o post original (se for RT) e pre-carrega likes e comentários
     followed_users = request.user.following.all()
     posts = Post.objects.filter(
         Q(author__in=followed_users) | Q(author=request.user)
     ).distinct().select_related('author', 'repost_of', 'repost_of__author').prefetch_related('likes', 'comments__author')
 
-    # Importante: Passar request.FILES para o formulário aceitar imagens/vídeos
+    # request.FILES é obrigatório para imagens e vídeos
     form = PostForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         post = form.save(commit=False)
@@ -52,36 +55,62 @@ def edit_profile(request):
     return render(request, 'twitter/edit_profile.html', {'form': form})
 
 @login_required
-def follow_unfollow(request, username):
-    target_user = get_object_or_404(User, username=username)
-    if target_user != request.user:
-        if target_user in request.user.following.all():
-            request.user.following.remove(target_user)
-        else:
-            request.user.following.add(target_user)
-            # NOTIFICAÇÃO: Novo seguidor
-            Notification.objects.create(
-                to_user=target_user,
-                from_user=request.user,
-                notification_type='F'
-            )
-    return redirect('profile', username=username)
+def password_change_custom(request):
+    """Troca a senha, desloga e manda para a tela de login limpa"""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            logout(request)
+            messages.success(request, 'Senha alterada! Entre com suas novas credenciais.')
+            return redirect('login')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'registration/password_change.html', {'form': form})
 
 @login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
+    liked = False
     if request.user in post.likes.all():
         post.likes.remove(request.user)
+        liked = False
     else:
         post.likes.add(request.user)
-        # NOTIFICAÇÃO: Like (apenas se não for o próprio post)
+        liked = True
         if post.author != request.user:
-            Notification.objects.create(
-                to_user=post.author,
-                from_user=request.user,
-                notification_type='L',
-                post=post
-            )
+            Notification.objects.create(to_user=post.author, from_user=request.user, notification_type='L', post=post)
+    
+    # Suporte a AJAX (Não recarrega a página)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'liked': liked, 'count': post.likes.count()})
+        
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
+
+@login_required
+def retweet(request, post_id):
+    original_post = get_object_or_404(Post, id=post_id)
+    # Sempre retuita o post original de verdade
+    source_post = original_post.repost_of if original_post.repost_of else original_post
+    
+    # Lógica de RETWEET ÚNICO (Toggle)
+    existing_rt = Post.objects.filter(author=request.user, repost_of=source_post).first()
+    
+    retweeted = False
+    if existing_rt:
+        existing_rt.delete()
+        retweeted = False
+    else:
+        new_rt = Post.objects.create(author=request.user, repost_of=source_post)
+        retweeted = True
+        if source_post.author != request.user:
+            Notification.objects.create(to_user=source_post.author, from_user=request.user, notification_type='R', post=new_rt)
+
+    # Suporte a AJAX
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'retweeted': retweeted, 'count': source_post.reposts.count()})
+        
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
@@ -90,52 +119,33 @@ def add_comment(request, post_id):
     content = request.POST.get('content')
     if content:
         Comment.objects.create(post=post, author=request.user, content=content)
-        # NOTIFICAÇÃO: Comentário
         if post.author != request.user:
-            Notification.objects.create(
-                to_user=post.author,
-                from_user=request.user,
-                notification_type='C',
-                post=post
-            )
+            Notification.objects.create(to_user=post.author, from_user=request.user, notification_type='C', post=post)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
-def retweet(request, post_id):
-    original_post = get_object_or_404(Post, id=post_id)
-    
-    # Se o post já for um retweet, retweetamos o post original de verdade
-    source_post = original_post.repost_of if original_post.repost_of else original_post
-    
-    # Cria o novo post de retweet
-    new_post = Post.objects.create(
-        author=request.user,
-        repost_of=source_post,
-        content=f"Retuitado de @{source_post.author.username}"
-    )
-    
-    # NOTIFICAÇÃO: Retweet
-    if source_post.author != request.user:
-        Notification.objects.create(
-            to_user=source_post.author,
-            from_user=request.user,
-            notification_type='R',
-            post=new_post
-        )
-    return redirect('home')
+def follow_unfollow(request, username):
+    target_user = get_object_or_404(User, username=username)
+    if target_user != request.user:
+        if target_user in request.user.following.all():
+            request.user.following.remove(target_user)
+        else:
+            request.user.following.add(target_user)
+            Notification.objects.create(to_user=target_user, from_user=request.user, notification_type='F')
+    return redirect('profile', username=username)
 
 @login_required
 def notifications(request):
     notifs = request.user.notifications.all()
-    # Marcar todas as notificações como lidas ao visualizar a página
     notifs.filter(is_read=False).update(is_read=True)
     return render(request, 'twitter/notifications.html', {'notifications': notifs})
 
 @login_required
 def delete_post(request, post_id):
+    # Garante que só o autor pode deletar o post ou o retweet
     post = get_object_or_404(Post, id=post_id, author=request.user)
     post.delete()
-    return redirect('home')
+    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
 def search_users(request):

@@ -12,12 +12,14 @@
             darkMode: 'class',
         }
 
+        // Verifica a preferência do usuário ao carregar a página
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark')
         } else {
             document.documentElement.classList.remove('dark')
         }
 
+        // Função para alternar o modo
         function toggleDarkMode() {
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
@@ -30,16 +32,15 @@
     </script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        /* Esconder scrollbar mas manter funcionalidade */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white dark:bg-gray-900 text-black dark:text-white transition-colors duration-200">
 
-    <div class="container mx-auto flex min-h-screen lg:max-w-7xl">
+    <!-- AJUSTE DE LAYOUT: Se não estiver logado, ocupa a largura total (w-full) -->
+    <div class="{% if user.is_authenticated %}container mx-auto lg:max-w-7xl{% else %}w-full{% endif %} flex min-h-screen">
         
-        <!-- BARRA LATERAL ESQUERDA (Menu) -->
+        <!-- BARRA LATERAL ESQUERDA (Só aparece se estiver LOGADO) -->
+        {% if user.is_authenticated %}
         <header class="w-20 lg:w-1/4 border-r border-gray-100 dark:border-gray-800 flex flex-col items-center lg:items-start p-4 sticky top-0 h-screen">
             <!-- Logo -->
             <div class="p-3 mb-2">
@@ -48,112 +49,79 @@
                 </a>
             </div>
 
-            <!-- Links do Menu -->
             <nav class="flex flex-col space-y-2 w-full">
-                {% if user.is_authenticated %}
                 <a href="{% url 'home' %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group">
                     <span class="text-2xl">🏠</span>
-                    <span class="text-xl font-bold hidden lg:block">Página Inicial</span>
+                    <span class="text-xl font-bold hidden lg:block text-black dark:text-white">Página Inicial</span>
                 </a>
 
                 <a href="{% url 'search_users' %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group">
                     <span class="text-2xl">🔍</span>
-                    <span class="text-xl hidden lg:block">Explorar</span>
+                    <span class="text-xl hidden lg:block text-black dark:text-white">Explorar</span>
                 </a>
-<!-- LINK DE NOTIFICAÇÕES (Com contador) -->
-<a href="{% url 'notifications' %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group relative">
-    <span class="text-2xl">🔔</span>
-    <span class="text-xl hidden lg:block">Notificações</span>
-    
-    <!-- Badge de Notificações não lidas corrigido -->
-    {% with count=user.unread_notifications_count %}
-        {% if count > 0 %}
-        <span class="absolute top-2 left-7 bg-blue-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-white dark:border-gray-900">
-            {{ count }}
-        </span>
-        {% endif %}
-    {% endwith %}
-</a>
 
-                <a href="{% url 'profile' user.username %}" class="mt-auto mb-4 flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer transition w-full overflow-hidden">
-    <img src="{{ user.profile_pic.url }}" class="h-10 w-10 rounded-full object-cover shrink-0">
-    <div class="ml-3 hidden lg:block truncate">
-        <p class="font-bold text-sm leading-tight truncate dark:text-white">{{ user.username }}</p>
-        <p class="text-gray-500 text-sm leading-tight truncate">@{{ user.username }}</p>
-    </div>
-</a>
+                <a href="{% url 'notifications' %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group relative">
+                    <span class="text-2xl">🔔</span>
+                    <span class="text-xl hidden lg:block text-black dark:text-white">Notificações</span>
+                    {% if user.unread_notifications_count > 0 %}
+                    <span class="absolute top-2 left-7 bg-blue-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center border-2 border-white dark:border-gray-900">
+                        {{ user.unread_notifications_count }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <a href="{% url 'profile' user.username %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group">
+                    <span class="text-2xl">👤</span>
+                    <span class="text-xl hidden lg:block text-black dark:text-white">Perfil</span>
+                </a>
 
                 <button onclick="toggleDarkMode()" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group w-full text-left">
                     <span class="text-2xl">🌙</span>
-                    <span class="text-xl hidden lg:block">Modo Escuro</span>
+                    <span class="text-xl hidden lg:block text-black dark:text-white">Modo Escuro</span>
                 </button>
 
-                <div class="pt-4">
-                    <a href="{% url 'logout' %}" class="flex items-center space-x-4 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition group text-red-500">
-                        <span class="text-2xl">🚪</span>
-                        <span class="text-xl hidden lg:block">Sair</span>
-                    </a>
-                </div>
-                {% else %}
-                <a href="{% url 'login' %}" class="flex items-center space-x-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition group">
-                    <span class="text-xl font-bold">Entrar</span>
+                <a href="{% url 'logout' %}" class="flex items-center space-x-4 p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition group text-red-500">
+                    <span class="text-2xl">🚪</span>
+                    <span class="text-xl hidden lg:block">Sair</span>
                 </a>
-                {% endif %}
             </nav>
 
-            {% if user.is_authenticated %}
-            <!-- Info do Usuário no Rodapé -->
-            <div class="mt-auto mb-4 flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer transition w-full overflow-hidden">
-                <img src="{{ user.profile_pic.url }}" class="h-10 w-10 rounded-full object-cover shrink-0">
-                <div class="ml-3 hidden lg:block truncate">
-                    <p class="font-bold text-sm leading-tight truncate">{{ user.username }}</p>
-                    <p class="text-gray-500 text-sm leading-tight truncate">@{{ user.username }}</p>
+            <div class="mt-auto mb-4 flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer transition">
+                <img src="{{ user.profile_pic.url }}" class="h-10 w-10 rounded-full object-cover">
+                <div class="ml-3 hidden lg:block">
+                    <p class="font-bold text-sm leading-tight text-black dark:text-white">{{ user.username }}</p>
+                    <p class="text-gray-500 text-sm leading-tight">@{{ user.username }}</p>
                 </div>
             </div>
-            {% endif %}
         </header>
+        {% endif %}
 
-        <!-- ÁREA CENTRAL (Feed/Conteúdo) -->
-        <main class="flex-1 max-w-2xl border-r border-gray-100 dark:border-gray-800 min-h-screen">
-            {% block content %}
-            <!-- Conteúdo dinâmico -->
-            {% endblock %}
+        <!-- ÁREA CENTRAL (Centraliza e ocupa tela cheia se deslogado) -->
+        <main class="flex-1 {% if user.is_authenticated %}max-w-2xl border-r border-gray-100 dark:border-gray-800{% else %}w-full flex items-center justify-center bg-white dark:bg-gray-900{% endif %}">
+            <div class="w-full {% if not user.is_authenticated %}max-w-md{% endif %}">
+                {% block content %}
+                {% endblock %}
+            </div>
         </main>
 
-        <!-- BARRA LATERAL DIREITA -->
-        <aside class="hidden lg:block w-80 p-4 sticky top-0 h-screen overflow-y-auto no-scrollbar">
-            <!-- Caixa de Busca Rápida -->
-            <div class="mb-4">
-                <form action="{% url 'search_users' %}" method="GET" class="relative">
-                    <input type="text" name="q" placeholder="Buscar no Twitter" 
-                           class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full py-3 px-12 outline-none focus:ring-2 focus:ring-blue-400 dark:text-white text-sm">
-                    <span class="absolute left-4 top-3 text-gray-500">🔍</span>
-                </form>
-            </div>
-
-            <div class="bg-gray-50 dark:bg-gray-800/50 border dark:border-gray-800 rounded-2xl p-4">
-                <h3 class="font-black text-xl mb-4 text-gray-900 dark:text-white">O que está acontecendo</h3>
-                <div class="space-y-6">
-                    <div class="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition p-1">
-                        <p class="text-xs text-gray-500">Tecnologia · Tendência</p>
-                        <p class="font-bold dark:text-gray-200">#DjangoFramework</p>
-                        <p class="text-xs text-gray-500">2.140 Posts</p>
+        <!-- BARRA LATERAL DIREITA (Só aparece se estiver LOGADO) -->
+        {% if user.is_authenticated %}
+        <aside class="hidden lg:block w-80 p-4 sticky top-0 h-screen">
+            <div class="bg-gray-50 dark:bg-gray-800 border dark:border-gray-800 rounded-2xl p-4">
+                <h3 class="font-bold text-xl mb-4 text-gray-900 dark:text-white">O que está acontecendo</h3>
+                <div class="space-y-4 text-black dark:text-white">
+                    <div class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition p-1">
+                        <p class="text-xs text-gray-500">Em alta no Brasil</p>
+                        <p class="font-bold">#DjangoFramework</p>
                     </div>
-                    <div class="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition p-1">
-                        <p class="text-xs text-gray-500">Brasil · Assunto do Momento</p>
-                        <p class="font-bold dark:text-gray-200">TailwindCSS</p>
-                        <p class="text-xs text-gray-500">1.850 Posts</p>
+                    <div class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition p-1">
+                        <p class="text-xs text-gray-500">Tecnologia · Tendência</p>
+                        <p class="font-bold">TailwindCSS</p>
                     </div>
                 </div>
-                <button class="text-blue-500 text-sm mt-4 hover:underline">Mostrar mais</button>
-            </div>
-
-            <div class="p-4 mt-4 text-xs text-gray-500 space-x-2">
-                <a href="#" class="hover:underline">Termos de Serviço</a>
-                <a href="#" class="hover:underline">Política de Privacidade</a>
-                <span>© 2026 Twitter Clone</span>
             </div>
         </aside>
+        {% endif %}
 
     </div>
 

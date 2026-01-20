@@ -10,10 +10,9 @@ class CustomUserCreationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Estilizando todos os campos do formulário de cadastro
-        for field_name in self.fields:
-            self.fields[field_name].widget.attrs.update({
-                'class': 'w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-400 text-black dark:text-white transition'
+        for field in self.fields.values():
+            field.widget.attrs.update({
+                'class': 'w-full bg-transparent border border-gray-300 dark:border-gray-600 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all placeholder-gray-500'
             })
 
 # Formulário de Edição de Perfil
