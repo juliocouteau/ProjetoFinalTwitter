@@ -1,75 +1,159 @@
 {% extends 'twitter/base.html' %}
 
 {% block content %}
-<!-- Cabeçalho Principal -->
+<!-- Cabeçalho Fixo -->
 <div class="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b dark:border-gray-800 p-4 z-10">
     <h2 class="text-xl font-bold text-gray-800 dark:text-white">Página Inicial</h2>
 </div>
 
-<!-- Barra de Busca -->
-<div class="p-4 border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
-    <form action="{% url 'search_users' %}" method="GET" class="relative">
-        <input type="text" name="q" placeholder="Buscar pessoas no Twitter..." 
-               class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full py-2 px-10 outline-none focus:ring-2 focus:ring-blue-400 dark:text-white transition">
-        <span class="absolute left-4 top-2.5">🔍</span>
-    </form>
-</div>
-
-<!-- Caixa de Postagem -->
+<!-- Caixa de Nova Postagem -->
 <div class="p-4 border-b dark:border-gray-800 flex space-x-4 bg-white dark:bg-gray-900">
-    <img src="{{ user.profile_pic.url }}" class="h-12 w-12 rounded-full object-cover">
-    <form method="POST" class="flex-1">
+    <a href="{% url 'profile' user.username %}" class="shrink-0">
+        <img src="{{ user.profile_pic.url }}" class="h-12 w-12 rounded-full object-cover shadow-sm">
+    </a>
+    
+    <!-- enctype permite o envio de fotos e vídeos -->
+    <form method="POST" enctype="multipart/form-data" class="flex-1">
         {% csrf_token %}
-        <div class="dark:text-white">
+        <div class="w-full">
             {{ form.content }}
         </div>
-        <div class="flex justify-end mt-3 border-t dark:border-gray-800 pt-2">
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-bold transition">
+
+        <!-- FEEDBACK VISUAL: Aparece quando você seleciona uma foto ou vídeo -->
+        <div id="file-preview-container" class="hidden mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl flex items-center justify-between">
+            <div class="flex items-center space-x-2 overflow-hidden">
+                <span id="file-icon" class="text-lg"></span>
+                <span id="file-name" class="text-sm text-blue-600 dark:text-blue-400 font-medium truncate"></span>
+            </div>
+            <button type="button" onclick="clearFileInputs()" class="text-blue-500 hover:text-red-500 font-bold p-1">✕</button>
+        </div>
+
+        <div class="flex items-center justify-between mt-3 border-t dark:border-gray-800 pt-3">
+            <div class="flex space-x-2 text-blue-500">
+                <!-- Botão Foto -->
+                <label class="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition" title="Adicionar Imagem">
+                    <span class="text-xl">🖼️</span>
+                    <input type="file" name="image" id="input-image" accept="image/*" class="hidden" onchange="handleFileSelect(this, '🖼️')">
+                </label>
+                <!-- Botão Vídeo -->
+                <label class="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition" title="Adicionar Vídeo">
+                    <span class="text-xl">🎥</span>
+                    <input type="file" name="video" id="input-video" accept="video/*" class="hidden" onchange="handleFileSelect(this, '🎥')">
+                </label>
+            </div>
+
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-bold transition shadow-sm">
                 Postar
             </button>
         </div>
     </form>
 </div>
 
-<!-- Feed de Posts -->
-<div class="divide-y dark:divide-gray-800">
+<!-- O Feed -->
+<div class="divide-y dark:divide-gray-800 bg-white dark:bg-gray-900 min-h-screen">
     {% for post in posts %}
-    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition flex space-x-3 bg-white dark:bg-gray-900">
-        <img src="{{ post.author.profile_pic.url }}" class="h-12 w-12 rounded-full object-cover">
-        <div class="flex-1">
-            <div class="flex items-center space-x-2">
-                <span class="font-bold text-black dark:text-white">{{ post.author.username }}</span>
-                <span class="text-gray-500 text-sm">@{{ post.author.username }} · {{ post.created_at|timesince }}</span>
-            </div>
-            <p class="text-gray-800 dark:text-gray-200 mt-1">{{ post.content }}</p>
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition">
+        
+        <!-- Se for Retweet -->
+        {% if post.repost_of %}
+        <div class="flex items-center space-x-2 text-gray-500 text-sm font-bold mb-2 ml-10">
+            <span>🔄</span>
+            <span>{% if post.author == user %}Você{% else %}{{ post.author.username }}{% endif %} retuitou</span>
+        </div>
+        {% endif %}
 
-            <!-- Ações -->
-            <div class="flex mt-3 space-x-12">
-                <a href="{% url 'like_post' post.id %}" class="text-gray-500 hover:text-red-500 flex items-center space-x-2">
-                    <span>{% if user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
-                    <span>{{ post.likes.count }}</span>
-                </a>
-                <span class="text-gray-500 flex items-center space-x-2">💬 {{ post.comments.count }}</span>
-            </div>
+        <div class="flex space-x-3">
+            {% with original_post=post.repost_of|default:post %}
+            <a href="{% url 'profile' original_post.author.username %}" class="shrink-0">
+                <img src="{{ original_post.author.profile_pic.url }}" class="h-12 w-12 rounded-full object-cover hover:opacity-90">
+            </a>
 
-            <!-- Comentários -->
-            <div class="mt-4 space-y-2">
-                {% for comment in post.comments.all %}
-                <div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-sm text-gray-800 dark:text-gray-200">
-                    <span class="font-bold">{{ comment.author.username }}</span>: {{ comment.content }}
+            <div class="flex-1">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <a href="{% url 'profile' original_post.author.username %}" class="font-bold text-gray-900 dark:text-white hover:underline">
+                            {{ original_post.author.username }}
+                        </a>
+                        <span class="text-gray-500 text-sm">@{{ original_post.author.username }} · {{ original_post.created_at|timesince }}</span>
+                    </div>
+                    {% if post.author == request.user %}
+                    <a href="{% url 'delete_post' post.id %}" onclick="return confirm('Excluir postagem?')" class="text-gray-400 hover:text-red-500">🗑️</a>
+                    {% endif %}
                 </div>
-                {% endfor %}
 
-                <!-- Form de Resposta -->
-                <form action="{% url 'add_comment' post.id %}" method="POST" class="mt-2 flex space-x-2">
-                    {% csrf_token %}
-                    <input type="text" name="content" placeholder="Escreva sua resposta..." 
-                           class="flex-1 bg-gray-100 dark:bg-gray-800 border-none rounded-full px-4 py-1 text-sm text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-400">
-                    <button class="text-blue-500 font-bold text-sm">Responder</button>
-                </form>
+                <p class="text-gray-800 dark:text-gray-200 mt-1 leading-relaxed">{{ original_post.content }}</p>
+
+                <!-- Fotos -->
+                {% if original_post.image %}
+                <div class="mt-3 rounded-2xl overflow-hidden border dark:border-gray-800">
+                    <img src="{{ original_post.image.url }}" class="w-full max-h-[500px] object-cover bg-gray-100 dark:bg-gray-800">
+                </div>
+                {% endif %}
+
+                <!-- Vídeos -->
+                {% if original_post.video %}
+                <div class="mt-3 rounded-2xl overflow-hidden border dark:border-gray-800 bg-black">
+                    <video controls class="w-full max-h-[500px]">
+                        <source src="{{ original_post.video.url }}" type="video/mp4">
+                        Seu navegador não suporta vídeos.
+                    </video>
+                </div>
+                {% endif %}
+
+                <!-- Ações -->
+                <div class="flex mt-4 justify-between max-w-md text-gray-500">
+                    <div class="flex items-center space-x-2 group cursor-pointer">
+                        <div class="p-2 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-500 rounded-full transition">
+                            <span>💬</span>
+                        </div>
+                        <span class="text-sm">{{ original_post.comments.count }}</span>
+                    </div>
+
+                    <a href="{% url 'retweet' original_post.id %}" class="flex items-center space-x-2 group">
+                        <div class="p-2 group-hover:bg-green-50 dark:group-hover:bg-green-900/20 group-hover:text-green-500 rounded-full transition">
+                            <span class="{% if post.repost_of %}text-green-500{% endif %}">🔄</span>
+                        </div>
+                        <span class="text-sm group-hover:text-green-500">{{ original_post.reposts.count }}</span>
+                    </a>
+
+                    <a href="{% url 'like_post' original_post.id %}" class="flex items-center space-x-2 group">
+                        <div class="p-2 group-hover:bg-red-50 dark:group-hover:bg-red-900/20 group-hover:text-red-500 rounded-full transition">
+                            {% if request.user in original_post.likes.all %}<span class="text-red-500">❤️</span>{% else %}<span class="text-gray-400">🤍</span>{% endif %}
+                        </div>
+                        <span class="text-sm {% if request.user in original_post.likes.all %}text-red-500{% endif %}">{{ original_post.likes.count }}</span>
+                    </a>
+                </div>
             </div>
+            {% endwith %}
         </div>
     </div>
+    {% empty %}
+    <div class="p-10 text-center text-gray-500">Nada por aqui ainda.</div>
     {% endfor %}
 </div>
+
+<!-- Scripts para o Feedback Visual -->
+<script>
+    function handleFileSelect(input, icon) {
+        const container = document.getElementById('file-preview-container');
+        const nameSpan = document.getElementById('file-name');
+        const iconSpan = document.getElementById('file-icon');
+        
+        if (input.files && input.files[0]) {
+            // Se selecionou um, limpa o outro (Twitter só permite 1 mídia por vez no seu código atual)
+            if (input.id === 'input-image') document.getElementById('input-video').value = "";
+            else document.getElementById('input-image').value = "";
+
+            container.classList.remove('hidden');
+            iconSpan.innerText = icon;
+            nameSpan.innerText = input.files[0].name;
+        }
+    }
+
+    function clearFileInputs() {
+        document.getElementById('input-image').value = "";
+        document.getElementById('input-video').value = "";
+        document.getElementById('file-preview-container').classList.add('hidden');
+    }
+</script>
 {% endblock %}

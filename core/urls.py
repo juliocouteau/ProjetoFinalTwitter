@@ -5,10 +5,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Aqui dizemos ao Django para procurar as rotas dentro da pasta twitter
-    path('', include('twitter.urls')), 
+    path('', include('twitter.urls')), # O Django vai procurar o arquivo que você acabou de mover
 ]
 
-# Configuração para imagens de perfil aparecerem
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

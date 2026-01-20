@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views  # IMPORTANTE: Apenas um ponto "."
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -16,4 +16,6 @@ urlpatterns = [
     path('delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
     path('profile/<str:username>/followers/', views.followers_list, name='followers_list'),
     path('profile/<str:username>/following/', views.following_list, name='following_list'),
+    path('retweet/<int:post_id>/', views.retweet, name='retweet'),
+    path('notifications/', views.notifications, name='notifications'),
 ]

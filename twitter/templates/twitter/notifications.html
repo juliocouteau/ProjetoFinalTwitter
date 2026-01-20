@@ -1,0 +1,27 @@
+{% extends 'twitter/base.html' %}
+{% block content %}
+<div class="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b dark:border-gray-800 p-4 z-10">
+    <h2 class="text-xl font-bold dark:text-white">Notificações</h2>
+</div>
+
+<div class="divide-y dark:divide-gray-800">
+    {% for n in notifications %}
+    <div class="p-4 flex items-center space-x-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+        <img src="{{ n.from_user.profile_pic.url }}" class="h-10 w-10 rounded-full object-cover">
+        <div class="flex-1">
+            <p class="dark:text-white">
+                <span class="font-bold">@{{ n.from_user.username }}</span> 
+                {% if n.notification_type == 'L' %} curtiu seu post.
+                {% elif n.notification_type == 'C' %} comentou no seu post.
+                {% elif n.notification_type == 'F' %} começou a te seguir.
+                {% elif n.notification_type == 'R' %} retuitou seu post.
+                {% endif %}
+            </p>
+            <span class="text-xs text-gray-500">{{ n.created_at|timesince }} atrás</span>
+        </div>
+    </div>
+    {% empty %}
+    <p class="p-10 text-center text-gray-500">Nenhuma notificação por enquanto.</p>
+    {% endfor %}
+</div>
+{% endblock %}

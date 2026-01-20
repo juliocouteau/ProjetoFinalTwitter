@@ -1,42 +1,60 @@
 {% extends 'twitter/base.html' %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center mt-10">
-    <div class="w-full max-w-md bg-white p-8 border rounded-lg shadow-sm">
-        <h2 class="text-2xl font-bold mb-6 text-center">Criar sua conta no Twitter</h2>
+<div class="flex flex-col items-center justify-center mt-10 px-4">
+    <div class="w-full max-w-md bg-white dark:bg-gray-900 p-8 border dark:border-gray-800 rounded-2xl shadow-xl">
+        <h2 class="text-2xl font-black mb-6 text-center dark:text-white">Criar sua conta</h2>
         
         <form method="post" class="space-y-4">
             {% csrf_token %}
             
             {% for field in form %}
-                <div class="flex flex-col">
-                    <label class="font-semibold text-gray-700">{{ field.label }}</label>
-                    <div class="border rounded p-2 focus-within:ring-2 focus-within:ring-blue-400">
+                <div class="flex flex-col relative">
+                    <label class="font-bold text-gray-700 dark:text-gray-300 mb-1 text-sm">{{ field.label }}</label>
+                    
+                    <div class="relative">
                         {{ field }}
+                        
+                        <!-- Botão de mostrar senha (aparece apenas nos campos de senha) -->
+                        {% if "password" in field.name %}
+                        <button type="button" 
+                                onclick="togglePassword('{{ field.id_for_label }}')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 transition">
+                            <span id="eye-{{ field.id_for_label }}">👁️</span>
+                        </button>
+                        {% endif %}
                     </div>
+
                     {% if field.errors %}
-                        <p class="text-red-500 text-xs">{{ field.errors }}</p>
+                        <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
                     {% endif %}
                 </div>
             {% endfor %}
 
-            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-full transition">
+            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-full transition mt-4 shadow-lg">
                 Cadastrar
             </button>
         </form>
 
-        <p class="mt-4 text-center text-gray-600">
-            Já tem uma conta? <a href="{% url 'login' %}" class="text-blue-500 hover:underline">Entrar</a>
+        <p class="mt-6 text-center text-gray-600 dark:text-gray-400">
+            Já tem uma conta? <a href="{% url 'login' %}" class="text-blue-500 hover:underline font-bold">Entrar</a>
         </p>
     </div>
 </div>
 
-<style>
-    /* Isso deixa os campos do formulário bonitos */
-    input {
-        width: 100%;
-        outline: none;
-        border: none;
+<script>
+    // Função para alternar visibilidade da senha
+    function togglePassword(fieldId) {
+        const input = document.getElementById(fieldId);
+        const eye = document.getElementById('eye-' + fieldId);
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            eye.innerText = '🙈'; // Muda o ícone
+        } else {
+            input.type = 'password';
+            eye.innerText = '👁️';
+        }
     }
-</style>
+</script>
 {% endblock %}
